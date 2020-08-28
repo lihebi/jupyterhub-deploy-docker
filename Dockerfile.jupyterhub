@@ -1,17 +1,47 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-ARG JUPYTERHUB_VERSION
-FROM jupyterhub/jupyterhub-onbuild:$JUPYTERHUB_VERSION
+
+# Use onbuild just because it will copy jupyterhub_config.py .. WTF every change
+# to that file requires a rebuilt of the whole image. I'm fixing that.
+#
+# ARG JUPYTERHUB_VERSION
+# FROM jupyterhub/jupyterhub-onbuild:$JUPYTERHUB_VERSION
+FROM jupyterhub/jupyterhub
+
+# There does not seem to be conda in jupyterhub images. Thus install conda:
+RUN apt-get -qq update && apt-get -qq -y install curl bzip2 \
+    && curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh \
+    # FIXME the preix is /usr/local, not /opt/conda
+    && bash /tmp/miniconda.sh -bfp /usr/local \
+    # && bash /tmp/miniconda.sh -bfp /opt/conda \
+    && rm -rf /tmp/miniconda.sh \
+    && conda install -y python=3 \
+    && conda update conda \
+    && apt-get -qq -y remove curl bzip2 \
+    && apt-get -qq -y autoremove \
+    && apt-get autoclean \
+    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log \
+    && conda clean --all --yes
+
+ENV PATH /opt/conda/bin:$PATH
+
 
 # Install dockerspawner, oauth, postgres
-RUN /opt/conda/bin/conda update -n root conda && \
-    /opt/conda/bin/conda install -yq psycopg2=2.7 && \
-    /opt/conda/bin/conda clean -tipsy && \
-    /opt/conda/bin/pip install --no-cache-dir \
-        oauthenticator==0.8.* \
-        dockerspawner==0.9.*
+RUN conda update -n root conda && \
+    conda install -yq psycopg2=2.7 && \
+    conda clean -tipsy
 
-RUN /opt/conda/bin/pip install --no-cache-dir ruamel.yaml
+RUN pip --version
+RUN python --version
+
+RUN pip install --no-cache-dir \
+        oauthenticator \
+        dockerspawner
+
+# BUT, still not found?
+RUN pip install --no-cache-dir ruamel.yaml
+# Actually I need to install via conda, the python env of jupyterhub seems to be this one
+RUN conda install -yq ruamel.yaml
 
 # Copy TLS certificate and key
 ENV SSL_CERT /srv/jupyterhub/secrets/jupyterhub.crt
@@ -22,3 +52,7 @@ RUN chmod 700 /srv/jupyterhub/secrets && \
     chmod 600 /srv/jupyterhub/secrets/*
 
 COPY ./userlist /srv/jupyterhub/userlist
+
+COPY jupyterhub_config.py /srv/jupyterhub/jupyterhub_config.py
+
+CMD ["jupyterhub", "-f", "/srv/jupyterhub/jupyterhub_config.py"]
