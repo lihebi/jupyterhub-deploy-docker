@@ -227,7 +227,7 @@ EXPOSE 8888
 
 # Configure container startup
 ENTRYPOINT ["tini", "-g", "--"]
-CMD ["start-notebook.sh"]
+CMD ["start-notebook.sh", "--NotebookApp.default_url=/lab", "--SingleUserNotebookApp.default_url=/lab"]
 
 # Copy local files as late as possible to avoid cache busting
 COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/

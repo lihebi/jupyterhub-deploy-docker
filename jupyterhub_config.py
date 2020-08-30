@@ -6,8 +6,9 @@ import os
 
 c = get_config()
 
+# FIXME all these default_url do not work
 c.Spawner.default_url = '/lab'
-
+c.DockerSpawner.default_url = '/lab'
 
 # We rely on environment variables to configure JupyterHub so that we
 # avoid having to rebuild the JupyterHub container every time we change a
@@ -24,7 +25,9 @@ c.DockerSpawner.container_image = "lihebi/mylab"
 # spawning containers.  Optionally, you can override the Docker run command
 # using the DOCKER_SPAWN_CMD environment variable.
 spawn_cmd = os.environ.get('DOCKER_SPAWN_CMD', "start-singleuser.sh")
+
 c.DockerSpawner.extra_create_kwargs.update({ 'command': spawn_cmd })
+
 # Connect containers to this Docker network
 network_name = os.environ['DOCKER_NETWORK_NAME']
 c.DockerSpawner.use_internal_ip = True
