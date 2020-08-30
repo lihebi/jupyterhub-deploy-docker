@@ -52,6 +52,17 @@ c.DockerSpawner.remove_containers = True
 # For debugging arguments passed to spawned containers
 c.DockerSpawner.debug = True
 
+# TODO try '--gpus': 'all' here
+c.DockerSpawner.extra_create_kwargs.update({'user': 'root'})
+c.DockerSpawner.environment = {
+    'GRANT_SUDO': '1',
+    # settinng proxy
+    # FIXME this will make the dockerspawner fail to spawn containers .. why?
+    #
+    # 'HTTP_PROXY' : 'http://192.168.100.42:8888',
+    # 'HTTPS_PROXY': 'http://192.168.100.42:8888'
+}
+
 # User containers will access hub by container name on the Docker network
 c.JupyterHub.hub_ip = 'jupyterhub'
 c.JupyterHub.hub_port = 8080
