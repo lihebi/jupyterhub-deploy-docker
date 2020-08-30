@@ -4,6 +4,9 @@
 
 set -e
 
+# DEBUG source .profile probably? Would that be in effect for all the session?
+if [ -f $HOME/.profile ]; then . $HOME/.profile; fi
+
 wrapper=""
 if [[ "${RESTARTABLE}" == "yes" ]]; then
     wrapper="run-one-constantly"
