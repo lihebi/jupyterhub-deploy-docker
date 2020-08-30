@@ -207,10 +207,22 @@ RUN julia -e 'import Pkg; Pkg.update()' && \
     fix-permissions "${JULIA_PKGDIR}" "${CONDA_DIR}/share/jupyter"
 
 
+USER root
+# playgroud to add additional packages
+# FIXME why I have to run update here??
+# probably because apt and apt-get are different things
+#
+# But apt-get still didn't find the packages
+# FIXME maybe apt-get update && xxx did not work?
+#
+RUN apt-get update
+RUN apt-get install -y iputils-ping iproute2
+
 ##############################
 ## Starting up
 ##############################
 
+USER $NB_UID
 EXPOSE 8888
 
 # Configure container startup
