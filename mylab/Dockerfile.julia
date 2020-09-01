@@ -1,0 +1,65 @@
+FROM lihebi/mylab-conda
+
+USER root
+
+
+# Julia dependencies
+# install Julia packages in /opt/julia instead of $HOME
+# ENV JULIA_DEPOT_PATH=/opt/julia
+# ENV JULIA_PKGDIR=/opt/julia
+
+# FIXME These won't work, permission error during container build
+#
+# Because JULIA_PKGDIR is nothing, JULIA_DEPOT_PATH is the path:
+# https://docs.julialang.org/en/v1/manual/environment-variables/
+#
+# TODO what if I just leave it blank?
+ENV JULIA_DEPOT_PATH=$HOME/.julia
+ENV JULIA_PKGDIR=$HOME/.julia
+# ENV JULIA_PKGDIR=/home/$NB_USER/.julia
+
+ENV JULIA_VERSION=1.5.0
+
+WORKDIR /tmp
+
+# hadolint ignore=SC2046
+RUN mkdir "/opt/julia-${JULIA_VERSION}" && \
+    wget -q https://julialang-s3.julialang.org/bin/linux/x64/$(echo "${JULIA_VERSION}" | cut -d. -f 1,2)"/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" && \
+    echo "be7af676f8474afce098861275d28a0eb8a4ece3f83a11027e3554dcdecddb91 *julia-${JULIA_VERSION}-linux-x86_64.tar.gz" | sha256sum -c - && \
+    tar xzf "julia-${JULIA_VERSION}-linux-x86_64.tar.gz" -C "/opt/julia-${JULIA_VERSION}" --strip-components=1 && \
+    rm "/tmp/julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
+RUN ln -fs /opt/julia-*/bin/julia /usr/local/bin/julia
+
+# HACK fix Conda.jl path-not-found problem. Otherwise, Conda cannot be
+# precompiled, and then IJulia cannot be precompiled, and Julia notebook cannot
+# start the kernel.
+RUN ln -sf $HOME/.julia /opt/julia
+
+# Show Julia where conda libraries are \
+RUN mkdir /etc/julia && \
+    echo "push!(Libdl.DL_LOAD_PATH, \"$CONDA_DIR/lib\")" >> /etc/julia/juliarc.jl && \
+    # Create JULIA_PKGDIR \
+    mkdir "${JULIA_PKGDIR}" && \
+    chown "${NB_USER}" "${JULIA_PKGDIR}" && \
+    fix-permissions "${JULIA_PKGDIR}"
+
+USER $NB_UID
+
+RUN julia -e 'import Pkg; Pkg.update()' && \
+    (test $TEST_ONLY_BUILD || julia -e 'import Pkg; Pkg.add("HDF5")') && \
+    julia -e "using Pkg; pkg\"add IJulia\"; pkg\"precompile\"" && \
+    # move kernelspec out of home \
+    mv "${HOME}/.local/share/jupyter/kernels/julia"* "${CONDA_DIR}/share/jupyter/kernels/" && \
+    chmod -R go+rx "${CONDA_DIR}/share/jupyter" && \
+    rm -rf "${HOME}/.local" && \
+    fix-permissions "${JULIA_PKGDIR}" "${CONDA_DIR}/share/jupyter"
+
+
+# DEBUG set this to home so that, hopefully user session can have julia cache
+# persisted
+ENV JULIA_PKGDIR=$HOME/.julia
+
+# Switch back to jovyan to avoid accidental container runs as root
+USER $NB_UID
+
+WORKDIR $HOME

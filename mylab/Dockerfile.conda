@@ -1,0 +1,82 @@
+FROM lihebi/mylab-base
+
+##############################
+# User scripts
+##############################
+
+USER $NB_UID
+WORKDIR $HOME
+ARG PYTHON_VERSION=default
+
+
+# Setup work directory for backward-compatibility
+RUN mkdir /home/$NB_USER/work && \
+    fix-permissions /home/$NB_USER
+
+# Install conda as jovyan and check the md5 sum provided on the download site
+ENV MINICONDA_VERSION=4.8.3 \
+    MINICONDA_MD5=d63adf39f2c220950a063e0529d4ff74 \
+        CONDA_VERSION=4.8.3
+
+
+WORKDIR /tmp
+RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-py38_${MINICONDA_VERSION}-Linux-x86_64.sh && \
+    echo "${MINICONDA_MD5} *Miniconda3-py38_${MINICONDA_VERSION}-Linux-x86_64.sh" | md5sum -c - && \
+    /bin/bash Miniconda3-py38_${MINICONDA_VERSION}-Linux-x86_64.sh -f -b -p $CONDA_DIR && \
+    rm Miniconda3-py38_${MINICONDA_VERSION}-Linux-x86_64.sh && \
+    echo "conda ${CONDA_VERSION}" >> $CONDA_DIR/conda-meta/pinned && \
+    conda config --system --prepend channels conda-forge && \
+    conda config --system --set auto_update_conda false && \
+    conda config --system --set show_channel_urls true && \
+    conda config --system --set channel_priority strict && \
+    if [ ! $PYTHON_VERSION = 'default' ]; then conda install --yes python=$PYTHON_VERSION; fi && \
+    conda list python | grep '^python ' | tr -s ' ' | cut -d '.' -f 1,2 | sed 's/$/.*/' >> $CONDA_DIR/conda-meta/pinned && \
+    conda install --quiet --yes conda && \
+    conda install --quiet --yes pip && \
+    conda update --all --quiet --yes && \
+    conda clean --all -f -y && \
+    rm -rf /home/$NB_USER/.cache/yarn && \
+    fix-permissions $CONDA_DIR && \
+        fix-permissions /home/$NB_USER
+
+
+# Install Tini
+RUN conda install --quiet --yes 'tini=0.18.0' && \
+    conda list tini | grep tini | tr -s ' ' | cut -d ' ' -f 1,2 >> $CONDA_DIR/conda-meta/pinned && \
+    conda clean --all -f -y && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
+
+# Install Jupyter Notebook, Lab, and Hub
+# Generate a notebook server config
+# Cleanup temporary files
+# Correct permissions
+# Do all this in a single RUN command to avoid duplicating all of the
+# files across image layers when the permissions change
+RUN conda install --quiet --yes \
+    'notebook=6.1.3' \
+    'jupyterhub=1.1.0' \
+    'jupyterlab=2.2.5' && \
+    conda clean --all -f -y && \
+    npm cache clean --force && \
+    jupyter notebook --generate-config && \
+    rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
+    rm -rf /home/$NB_USER/.cache/yarn && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
+
+RUN pip install --upgrade jupyterlab-git
+# FIXME this really feels too slow
+# FIXME but if I have minimize set to False, the download (page open) will be slow
+RUN jupyter lab build --dev-build=False --minimize=False -y && \
+        fix-permissions "${CONDA_DIR}" && \
+        fix-permissions "/home/${NB_USER}"
+
+# TODO do a lite build by default in jupyterlab's config.py
+# c.LabBuildApp.minimize = False
+# c.LabBuildApp.dev_build = False
+
+# Switch back to jovyan to avoid accidental container runs as root
+USER $NB_UID
+
+WORKDIR $HOME
