@@ -33,9 +33,18 @@ network_name = os.environ['DOCKER_NETWORK_NAME']
 c.DockerSpawner.use_internal_ip = True
 c.DockerSpawner.network_name = network_name
 # Pass the network name as argument to spawned containers
-c.DockerSpawner.extra_host_config = { 'network_mode': network_name,
-                                      # '--gpus': 'all',
-                                      'runtime': 'nvidia'
+c.DockerSpawner.extra_host_config = {
+    'network_mode': network_name,
+    # This is not supported yet. runtime is still supported though.
+    # '--gpus': 'all',
+    'runtime': 'nvidia',
+    # DEBUG make nvidia-smi display process ID
+    # see https://github.com/NVIDIA/nvidia-docker/issues/179
+    # CAUTION pid_mode, not pid
+    'pid_mode': 'host',
+    # Or:
+    #
+    # 'privileged': True
 }
 # Explicitly set notebook directory because we'll be mounting a host volume to
 # it.  Most jupyter/docker-stacks *-notebook images run the Notebook server as
@@ -55,8 +64,10 @@ c.DockerSpawner.remove_containers = True
 # For debugging arguments passed to spawned containers
 c.DockerSpawner.debug = True
 
-# TODO try '--gpus': 'all' here
-c.DockerSpawner.extra_create_kwargs.update({'user': 'root'})
+c.DockerSpawner.extra_create_kwargs.update(
+    # FIXME I forgot why setting user to root here ..
+    {'user': 'root'})
+
 c.DockerSpawner.environment = {
     'GRANT_SUDO': '1',
     # settinng proxy
