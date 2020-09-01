@@ -33,6 +33,9 @@ network_name = os.environ['DOCKER_NETWORK_NAME']
 c.DockerSpawner.use_internal_ip = True
 c.DockerSpawner.network_name = network_name
 # Pass the network name as argument to spawned containers
+#
+# A list of all configs:
+# https://docker-py.readthedocs.io/en/stable/containers.html
 c.DockerSpawner.extra_host_config = {
     'network_mode': network_name,
     # This is not supported yet. runtime is still supported though.
