@@ -28,7 +28,16 @@ RUN cd $HOME/iracket && git checkout dev
 # RUN raco pkg install --batch --deps search-auto --auto --link
 # RUN raco iracket install
 
+# TODO pip install to user dir
+RUN pip install tensorflow
+
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
+# for tensorflow hub. The tensorboard must be started on 0.0.0.0
+# tensorboard --logdir tensorboard_logs/ --bind_all
+#
+# TODO https://github.com/lspvic/jupyter_tensorboard
+# TODO https://github.com/chaoleili/jupyterlab_tensorboard
+EXPOSE 6006
 
 WORKDIR $HOME
