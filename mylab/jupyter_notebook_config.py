@@ -9,6 +9,10 @@ import stat
 
 c = get_config()
 c.NotebookApp.ip = '0.0.0.0'
+# FIXME jupyterhub requires it to run on 8888 while google AI Platform Notebooks
+# requires it to run on 8080. I'll need to modify the Dockerfiles to expose
+# different ports.
+# c.NotebookApp.port = 8080
 c.NotebookApp.port = 8888
 c.NotebookApp.open_browser = False
 
