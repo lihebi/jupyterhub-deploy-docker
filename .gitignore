@@ -1,3 +1,9 @@
 secrets/
 userlist
 .DS_Store
+
+db.sqlite*
+.ipynb_checkpoints
+.julia_pkgs
+*.tar.gz
+nix/result
