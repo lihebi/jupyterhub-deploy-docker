@@ -17,3 +17,5 @@ c.DockerSpawner.container_image = "lihebi/mylab"
 ## TODOs
 - install nvidia driver and nvidia container runtime on host
 - figure out how to spawn a container with `--gpus all`
+- install emacs26
+- use tsinghua mirror

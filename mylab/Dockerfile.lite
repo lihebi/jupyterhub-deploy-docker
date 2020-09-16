@@ -31,6 +31,15 @@ RUN cd $HOME/iracket && git checkout dev
 # TODO pip install to user dir
 RUN pip install tensorflow
 
+# TODO setup tensorboard jupyter
+# TODO setup tensorboard jupyterlab
+# TODO setup GPU monitoring jupyterlab
+# TODO use nix to generate docker image
+# TODO add R
+#
+# TODO figure out how to make conda, pip, julia all the package manager work
+# together
+
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
 # for tensorflow hub. The tensorboard must be started on 0.0.0.0
