@@ -55,6 +55,8 @@ c.DockerSpawner.extra_host_config = {
 # We follow the same convention.
 #
 # FIXME if using /work, I cannot go to higher-level!!!
+#
+# CAUTION I cannot just use '/home/jovyan', it won't work!!! FIXME Why?
 notebook_dir = os.environ.get('DOCKER_NOTEBOOK_DIR') or '/home/jovyan'
 c.DockerSpawner.notebook_dir = notebook_dir
 # Mount the real user's Docker volume on the host to the notebook user's

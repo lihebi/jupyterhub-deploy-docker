@@ -163,28 +163,41 @@ RUN apt-get update && \
         apt-get install -yq --no-install-recommends\
         iputils-ping iproute2 htop locate libzmq5
 
-##############################
-USER $NB_UID
-
-# UPDATE I don't need these. I would just install per-user, and those persist
-# with the mounted volume
-#
-# RUN julia -e 'import Pkg; Pkg.update()' && \
-#     (test $TEST_ONLY_BUILD || julia -e 'import Pkg; Pkg.add("HDF5")') && \
-#         julia -e "using Pkg; pkg\"add IJulia\"; pkg\"precompile\""
-
-# ENV JULIA_DEPOT_PATH=$HOME/.julia:/opt/julia
-
-# Files
-# COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/
-COPY start-notebook.sh start-singleuser.sh /usr/local/bin/
-COPY jupyter_notebook_config.py /etc/jupyter/
+# Install racket
+RUN apt-get install -y software-properties-common &&\
+        add-apt-repository ppa:plt/racket &&\
+        apt-get update && \
+        apt-get install -y racket
 
 ENV TINI_VERSION v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 
+##############################
+USER $NB_UID
+
+# ENV JULIA_DEPOT_PATH=$HOME/.julia:/opt/julia
+RUN git clone https://github.com/lihebi/iracket $HOME/iracket
+RUN cd $HOME/iracket && git checkout dev &&\
+        raco pkg install --batch --deps search-auto --link; exit 0
+RUN raco iracket install
+
+# UPDATE I don't need these. I would just install per-user, and those persist
+# with the mounted volume
+#
+# CAUTION this is slow
+RUN julia -e 'import Pkg; Pkg.update()' && \
+    (test $TEST_ONLY_BUILD || julia -e 'import Pkg; Pkg.add("HDF5")') && \
+        julia -e "using Pkg; pkg\"add IJulia\"; pkg\"precompile\""
+
+# Files
+# COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/
+COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/
+COPY jupyter_notebook_config.py /etc/jupyter/
+
 EXPOSE 8888
 WORKDIR $HOME
+
+
 ENTRYPOINT ["/tini", "-g", "--"]
-CMD [ "/usr/local/bin/start-notebook.sh", "--allow-root"]
+CMD [ "/usr/local/bin/start-notebook.sh" ]
