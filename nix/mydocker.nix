@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  myMkDockerImage = { name ? "jupyterwith", jupyterlab, extraPackages }:
+  myMkDockerImage = { name ? "jupyterwith", jupyterlab }:
     let
       # nix run nixpkgs.nix-prefetch-docker -c nix-prefetch-docker --image-name mysql --image-tag 5
       ubuntu = pkgs.dockerTools.pullImage {
@@ -30,6 +30,7 @@ let
       pkgs.dockerTools.buildImage {
         inherit name;
         tag = "latest";
+        # tag = "1";
         # using ubuntu so that:
         # 1. providing basic utitlities
         # 2. users can install packages using apt
@@ -48,22 +49,51 @@ let
 
         created = "now";
         contents = [ jupyterlab pkgs.glibcLocales ]
-                   ++ (extraPackages pkgs)
+                   # ++ (extraPackages pkgs)
+                   ++ (jupyterlab.extraPackages pkgs)
         ;
+        # CAUTION this requires setting
+        #     system-features = kvm
+        # in ~/.config/nix/nix.conf
+        #
+        # Most likely your /tmp tmpfs is not big enough
+        # (https://github.com/NixOS/nixpkgs/issues/54707), and you probably want
+        # to do this:
+        #
+        #     sudo mount -o remount,size=40G /tmp
+        #
+        # FIXME I still cannot get it working. I'm using root instead
+        #
+        # runAsRoot = ''
+        #     #!${pkgs.runtimeShell}
+        #     ${pkgs.dockerTools.shadowSetup}
+        # #     mkdir -p /data
+        #     #
+        #     useradd -aG admin -s /bin/bash myuser
+        #     echo "myuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/notebook
+        # '';
         config = {
+          # TODO set user shell to bash
+          # TODO enable sudo
+          # User = "myuser";
           Env = [
             "LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive"
             "LANG=en_US.UTF-8"
             "LANGUAGE=en_US:en"
             "LC_ALL=en_US.UTF-8"
+            "SHELL=/bin/bash"
           ];
-          CMD = [ "/bin/jupyter-lab" "--ip=0.0.0.0" "--no-browser" "--allow-root" ];
-          WorkingDir = "/data";
+          CMD = [
+            "/bin/jupyter-lab"
+            # "/bin/jupyterhub-singleuser"
+            "--ip=0.0.0.0" "--no-browser" "--allow-root" ];
+          WorkingDir = "/root";
           ExposedPorts = {
             "8888" = {};
           };
           Volumes = {
-            "/data" = {};
+            # "/data" = {};
+            "/root" = {};
           };
         };
       };
@@ -73,14 +103,6 @@ in
 myMkDockerImage {
   name = "nixlab";
   jupyterlab = mylab;
+  # FIXME how to setup bash completion?
+  # extraPackages = p: [ p.bash p.bash-completion ];
 }
-
-
-  # To build
-  # nix-build nixlab.nix
-  #
-  # To load into docker
-  # docker load < result
-  #
-  # To run docker
-  # sudo docker run -it --rm -p 8888:8888 nixlab

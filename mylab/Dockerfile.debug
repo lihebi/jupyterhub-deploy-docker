@@ -1,0 +1,16 @@
+FROM lihebi/mylab-conda
+
+EXPOSE 8888
+
+USER root
+WORKDIR /root
+
+COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/
+COPY jupyter_notebook_config.py /etc/jupyter/
+
+# ENTRYPOINT ["tini", "-g", "--"]
+# CMD [ "start-notebook.sh" ]
+
+# CMD ["jupyterhub-singleuser", "--allow-root", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/root", "--NotebookApp.default_url=/lab", "--debug"]
+
+CMD [ "start-singleuser.sh", "--allow-root"]
