@@ -76,7 +76,3 @@ RUN jupyter lab build --dev-build=False --minimize=False -y && \
 # c.LabBuildApp.minimize = False
 # c.LabBuildApp.dev_build = False
 
-# Switch back to jovyan to avoid accidental container runs as root
-USER $NB_UID
-
-WORKDIR $HOME
