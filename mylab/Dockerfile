@@ -197,6 +197,27 @@ RUN apt-get update && apt-get install -yq --no-install-recommends\
         silversearcher-ag
 
 USER $NB_UID
+# jupyterlab extensions
+RUN pip install --upgrade jupyterlab-git
+RUN pip install tensorflow
+RUN pip install jupyter-tensorboard
+RUN jupyter labextension install --no-build jupyterlab_tensorboard
+RUN jupyter labextension install --no-build @jupyterlab/toc
+RUN pip install pynvml bokeh jupyterlab-nvdashboard
+RUN jupyter labextension install --no-build jupyterlab-nvdashboard
+RUN jupyter labextension install --no-build @ijmbarr/jupyterlab_spellchecker
+RUN jupyter labextension install --no-build @aquirdturtle/collapsible_headings
+# TODO ipywidgets and its lab companion @jupyter-widgets/jupyterlab-manager@2.0
+#
+# # FIXME this really feels too slow
+# # FIXME but if I have minimize set to False, the download (page open) will be slow
+# --dev-build=False --minimize=False
+RUN jupyter lab build -y && \
+        fix-permissions "${CONDA_DIR}" && \
+        fix-permissions "/home/${NB_USER}"
+
+
+USER $NB_UID
 
 # Files
 # COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/
