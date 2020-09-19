@@ -26,6 +26,10 @@ c.DockerSpawner.container_image = "lihebi/mylab"
 # using the DOCKER_SPAWN_CMD environment variable.
 spawn_cmd = os.environ.get('DOCKER_SPAWN_CMD', "start-singleuser.sh")
 
+# jupyterhub/share/jupyterhub/templates/
+c.JupyterHub.template_paths = ['/srv/jupyterhub/templates']
+c.JupyterHub.template_vars = {'announcement': 'My Announcement!'}
+
 c.DockerSpawner.extra_create_kwargs.update({ 'command': spawn_cmd })
 
 # Connect containers to this Docker network
