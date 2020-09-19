@@ -12,12 +12,23 @@ let
         finalImageName = "nvidia/cuda";
         finalImageTag = "10.1-runtime-ubuntu18.04";
       };
+      # nix run nixpkgs.nix-prefetch-docker -c nix-prefetch-docker --image-name lihebi/nixlab --image-tag latest
+      nixlab-base = pkgs.dockerTools.pullImage {
+        imageName = "lihebi/nixlab-base";
+        imageDigest = "sha256:35d952238b0bc7776e429667ad09c5108fafff045a0226115b21e27f2bc0a706";
+        sha256 = "1rf7axgam8j89pahzn8i307z75n8vyyg5f810asilvgddv3yp3nr";
+        finalImageName = "lihebi/nixlab-base";
+        finalImageTag = "latest";
+      };
     in
       pkgs.dockerTools.buildImage {
         inherit name;
         tag = "latest";
-        fromImage = nvidia;
-        fromImageTag = "10.1-runtime-ubuntu18.04";
+        # fromImage = nvidia;
+        # fromImageTag = "10.1-runtime-ubuntu18.04";
+        # fromImage = ../mylab/nixlab-base.tar.gz;
+        fromImage = nixlab-base;
+        fromImageTag = "latest";
 
         created = "now";
         contents = [ pkgs.glibcLocales ]
@@ -32,18 +43,23 @@ let
             "LC_ALL=en_US.UTF-8"
             "SHELL=/bin/bash"
           ];
-          CMD = [
-            "/bin/jupyter-lab"
-            # "/bin/jupyterhub-singleuser"
-            "--ip=0.0.0.0" "--no-browser" "--allow-root" ];
+          # CMD = [
+          #   "/bin/jupyter-lab"
+          #   # "/bin/jupyterhub-singleuser"
+          #   "--ip=0.0.0.0" "--no-browser" "--allow-root" ];
+          Entrypoint = [
+            "tini" "-g" "--"
+          ];
+          # CMD = [
+          # ];
           WorkingDir = "/root";
           ExposedPorts = {
             "8888" = {};
           };
-          Volumes = {
-            # "/data" = {};
-            "/root" = {};
-          };
+          # Volumes = {
+          #   # "/data" = {};
+          #   "/root" = {};
+          # };
         };
       };
 
@@ -53,20 +69,27 @@ in
 myMkDockerImage {
   name = "nixlab";
   extraPackages = p: [
-    # p.bash
+    p.bash
     # p.bash-completion
-    p.which
-    p.git
-    p.sudo
+    # FIXME this sudo is not working
+    # p.sudo
     myjulia
-    p.wget
-    p.curl
+
+    # these should be in base image
+    # p.which
+    # p.git
+    # p.wget
+    # p.curl
+
     p.silver-searcher
     p.tini
+
+    # p.conda
+    # p.python37Packages.conda
     # FIXME use python37With?
-    p.python37Packages.jupyterhub
-    p.python37Packages.jupyter
-    p.jupyter
-    p.python37Packages.jupyterlab
+    # p.python37Packages.jupyterhub
+    # p.python37Packages.jupyter
+    # p.jupyter
+    # p.python37Packages.jupyterlab
   ];
 }
