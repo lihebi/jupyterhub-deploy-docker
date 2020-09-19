@@ -183,12 +183,20 @@ RUN cd $HOME/iracket && git checkout dev &&\
 RUN raco iracket install
 
 # UPDATE I don't need these. I would just install per-user, and those persist
-# with the mounted volume
+# with the mounted volume.  Even if these are set, they will be removed.
 #
 # CAUTION this is slow
 RUN julia -e 'import Pkg; Pkg.update()' && \
     (test $TEST_ONLY_BUILD || julia -e 'import Pkg; Pkg.add("HDF5")') && \
         julia -e "using Pkg; pkg\"add IJulia\"; pkg\"precompile\""
+
+# DEBUG Additional packages
+USER root
+
+RUN apt-get update && apt-get install -yq --no-install-recommends\
+        silversearcher-ag
+
+USER $NB_UID
 
 # Files
 # COPY start.sh start-notebook.sh start-singleuser.sh /usr/local/bin/
