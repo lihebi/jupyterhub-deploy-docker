@@ -1,5 +1,7 @@
-FROM nvidia/cuda:10.1-runtime-ubuntu18.04
+# FROM nvidia/cuda:10.1-runtime-ubuntu18.04
+# FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04
 # FROM nvidia/cuda:11.0-runtime-ubuntu20.04
+FROM nvidia/cuda:10.1-devel-ubuntu18.04
 LABEL maintainer="Hebi Li <hebi@lihebi.com>"
 RUN chmod 1777 /tmp && chmod 1777 /var/tmp
 ARG NB_USER="jovyan"
@@ -39,9 +41,9 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
     netcat \
     python-dev \
     # ---- nbconvert dependencies ----
-    texlive-xetex \
-    texlive-fonts-recommended \
-    texlive-plain-generic \
+    # texlive-xetex \
+    # texlive-fonts-recommended \
+    # texlive-plain-generic \
     # ----
     tzdata \
     unzip \
