@@ -1,5 +1,5 @@
-# FROM nvidia/cuda:10.1-runtime-ubuntu18.04
-FROM nvidia/cuda:11.0-runtime-ubuntu20.04
+FROM nvidia/cuda:10.1-runtime-ubuntu18.04
+# FROM nvidia/cuda:11.0-runtime-ubuntu20.04
 LABEL maintainer="Hebi Li <hebi@lihebi.com>"
 RUN chmod 1777 /tmp && chmod 1777 /var/tmp
 ARG NB_USER="jovyan"
@@ -190,16 +190,12 @@ RUN julia -e 'import Pkg; Pkg.update()' && \
     (test $TEST_ONLY_BUILD || julia -e 'import Pkg; Pkg.add("HDF5")') && \
         julia -e "using Pkg; pkg\"add IJulia\"; pkg\"precompile\""
 
-# DEBUG Additional packages
-USER root
-
-RUN apt-get update && apt-get install -yq --no-install-recommends\
-        silversearcher-ag
-
 USER $NB_UID
 # jupyterlab extensions
 RUN pip install --upgrade jupyterlab-git
-RUN pip install tensorflow
+# FIXME NOT WORKING seems that I have to install tensorflow and tensorboard 2.2 for nbtensorboard extension to work
+# tensorflow==2.2 tensorboard==2.2
+RUN pip install tensorflow==2.2
 RUN pip install jupyter-tensorboard
 RUN jupyter labextension install --no-build jupyterlab_tensorboard
 RUN jupyter labextension install --no-build @jupyterlab/toc
@@ -207,14 +203,43 @@ RUN pip install pynvml bokeh jupyterlab-nvdashboard
 RUN jupyter labextension install --no-build jupyterlab-nvdashboard
 RUN jupyter labextension install --no-build @ijmbarr/jupyterlab_spellchecker
 RUN jupyter labextension install --no-build @aquirdturtle/collapsible_headings
+RUN jupyter labextension install --no-build https://github.com/lihebi/jupyterlab-racket
 # TODO ipywidgets and its lab companion @jupyter-widgets/jupyterlab-manager@2.0
 #
 # # FIXME this really feels too slow
 # # FIXME but if I have minimize set to False, the download (page open) will be slow
 # --dev-build=False --minimize=False
-RUN jupyter lab build -y && \
+RUN jupyter lab build -y --dev-build=False --minimize=False && \
         fix-permissions "${CONDA_DIR}" && \
         fix-permissions "/home/${NB_USER}"
+
+# DEBUG Additional packages
+USER root
+RUN apt-get update && apt-get install -yq --no-install-recommends\
+        tmux silversearcher-ag emacs
+
+
+
+# TODO DEBUG install BHDL deps, including:
+USER $NB_UID
+# ENV JULIA_DEPOT_PATH=$HOME/.julia:/opt/julia
+
+# FIXME this is private repo
+# RUN git clone --recursive https://github.com/lihebi/bhdl $HOME/bhdl
+# RUN cd $HOME/bhdl &&\
+#         raco pkg install --batch --deps search-auto --link; exit 0
+# RUN cd $HOME/bhdl/placement &&\
+#         julia --project -e 'import Pkg; Pkg.update(); Pkg.instantiate(verbose=true); Pkg.precompile(verbose=true)'
+
+# RUN pip uninstall -y tensorflow
+# RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple tensorflow==2.2
+# RUN pip install tensorflow==2.2
+
+# TODO install R and setup kernels
+# RUN conda install r-base=3.6.3
+
+# TODO all the R packages for DAG-EQ
+# RUN R -e "install.packages('devtools')"
 
 
 USER $NB_UID
